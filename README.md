@@ -1,2 +1,2 @@
-# apostille-pages
-Apostille verification system with QR code generation on GitHub Pages
+# apostille
+Apostille verification system with QR code generation

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Стили как в админке */
+    .file-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid #eee;}
+    .qr-container { display: flex; justify-content: center; margin: 10px 0; background: #f9f9f9; padding: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <div class="header-text"><h1>User Dashboard</h1></div>
+    </div>
+  </header>
+
+  <main class="content" style="max-width: 600px">
+    
+    <div id="auth-block">
+      <h2 style="margin-bottom: 15px;">Login / Register</h2>
+      <p style="font-size:13px; color:#666; margin-bottom:15px;">Enter your email to receive a magic link or sign in.</p>
+      
+      <input type="email" id="user-email" placeholder="your@email.com" style="margin-bottom:10px;">
+      <button class="btn btn-main" id="login-btn" style="width:100%;">Sign In / Sign Up</button>
+      <p id="auth-status" style="margin-top:10px; font-size:13px;"></p>
+    </div>
+
+    <div id="dashboard-block" style="display: none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="font-size:18px;">My Documents</h2>
+        <button class="btn btn-secondary" id="logout-btn" style="font-size:12px;">Logout</button>
+      </div>
+
+      <div style="background:#f0f4ff; padding:15px; border-radius:8px; margin-bottom:25px;">
+          <h3 style="font-size:16px; margin-bottom:10px; color:#0b3d91;">Upload New Document</h3>
+          
+          <label>Apostille Number</label>
+          <input type="text" id="up-apostille" placeholder="APO-XXXX" style="margin-bottom:10px;">
+          
+          <label>Date</label>
+          <input type="date" id="up-date" style="margin-bottom:10px;">
+          
+          <label>Referral Code (Optional)</label>
+          <input type="text" id="up-ref" placeholder="Code" style="margin-bottom:10px;">
+
+          <label>PDF File</label>
+          <input type="file" id="up-file" accept="application/pdf" style="margin-bottom:10px;">
+
+          <button class="btn btn-main" id="upload-btn" style="width:100%;">Upload & Generate QR</button>
+      </div>
+
+      <div id="my-files"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ВСТАВЬ ТЕ ЖЕ КЛЮЧИ, ЧТО И ВЕЗДЕ
+    const SUPABASE_URL = "https://tfdrjiztsbuusngfdmye.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZHJqaXp0c2J1dXNuZ2ZkbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDMwMDMsImV4cCI6MjA4NDM3OTAwM30.jFFfWfU1vFrE_0XvnVm0wL1cW0O6QHtwAUbUv9mGMC4";
+
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const authBlock = document.getElementById("auth-block");
+    const dashBlock = document.getElementById("dashboard-block");
+    const authStatus = document.getElementById("auth-status");
+    let currentUser = null;
+
+    // 1. Проверка сессии
+    async function checkUser() {
+        const { data: { session } } = await db.auth.getSession();
+        if(session) {
+            currentUser = session.user;
+            authBlock.style.display = "none";
+            dashBlock.style.display = "block";
+            loadUserFiles();
+        } else {
+            authBlock.style.display = "block";
+            dashBlock.style.display = "none";
+        }
+    }
+    checkUser();
+
+    // 2. Логин (Magic Link для простоты, или пароль если настроен)
+    document.getElementById("login-btn").addEventListener("click", async () => {
+        const email = document.getElementById("user-email").value;
+        if(!email) return alert("Enter email");
+        
+        authStatus.textContent = "Sending login link...";
+        // Используем OTP (код на почту) для входа без пароля, это проще всего настроить
+      const { error } = await db.auth.signInWithOtp({ 
+    email: email,
+    options: {
+        emailRedirectTo: window.location.href 
+    }
+});
+        
+        if(error) authStatus.textContent = "Error: " + error.message;
+        else authStatus.textContent = "Check your email for the login link!";
+    });
+
+    // 3. Логаут
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+        await db.auth.signOut();
+        checkUser();
+    });
+
+    // 4. Загрузка файла пользователем
+    document.getElementById("upload-btn").addEventListener("click", async () => {
+        const apostille = document.getElementById("up-apostille").value;
+        const date = document.getElementById("up-date").value;
+        const ref = document.getElementById("up-ref").value;
+        const file = document.getElementById("up-file").files[0];
+
+        if(!apostille || !date || !file) return alert("Fill required fields");
+
+        const btn = document.getElementById("upload-btn");
+        btn.disabled = true;
+        btn.textContent = "Uploading...";
+
+        const fileName = `user_${currentUser.id}_${Date.now()}.pdf`;
+        
+        // Загрузка в Storage
+        const { error: upErr } = await db.storage.from("apostilles").upload(fileName, file);
+        if(upErr) {
+             btn.disabled = false;
+             return alert("Upload failed: " + upErr.message);
+        }
+
+        // Запись в БД (owner_id добавится автоматически или триггером, но лучше явно если RLS позволяет)
+        const { error: dbErr } = await db.from("apostilles").insert({
+            apostille_number: apostille,
+            issue_date: date,
+            referral_code: ref,
+            file_path: fileName,
+            owner_id: currentUser.id // Важно!
+        });
+
+        if(dbErr) {
+            alert("DB Error: " + dbErr.message);
+        } else {
+            alert("Success!");
+            loadUserFiles();
+            // Очистка полей
+            document.getElementById("up-apostille").value = "";
+            document.getElementById("up-file").value = "";
+        }
+        btn.disabled = false;
+        btn.textContent = "Upload & Generate QR";
+    });
+
+    // 5. Загрузка списка файлов пользователя
+    async function loadUserFiles() {
+        const container = document.getElementById("my-files");
+        container.innerHTML = "Loading...";
+
+        // Фильтруем только свои файлы
+        const { data, error } = await db.from("apostilles")
+            .select("*")
+            .eq("owner_id", currentUser.id)
+            .order("created_at", { ascending: false });
+
+        if(error) return container.innerHTML = "Error loading files";
+        if(!data.length) return container.innerHTML = "<p>No documents yet.</p>";
+
+        container.innerHTML = "";
+        data.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "file-card";
+            
+            const verifyLink = `${window.location.origin}/index.html?apostille=${encodeURIComponent(item.apostille_number)}&date=${encodeURIComponent(item.issue_date)}`;
+            const qrId = "qr-" + item.id;
+
+            div.innerHTML = `
+                <strong>${item.apostille_number}</strong> <br>
+                <small>Date: ${item.issue_date}</small><br>
+                ${item.referral_code ? `<small>Ref: ${item.referral_code}</small>` : ''}
+                <div id="${qrId}" class="qr-container"></div>
+                <button onclick="deleteDoc(${item.id}, '${item.file_path}')" style="background:#ffdddd; border:none; padding:5px; width:100%; border-radius:4px; color:red; cursor:pointer;">Delete</button>
+            `;
+            container.appendChild(div);
+
+            setTimeout(() => {
+                new QRCode(document.getElementById(qrId), {
+                    text: verifyLink,
+                    width: 128,
+                    height: 128
+                });
+            }, 100);
+        });
+    }
+
+    window.deleteDoc = async (id, path) => {
+        if(!confirm("Delete this document?")) return;
+        await db.storage.from("apostilles").remove([path]);
+        await db.from("apostilles").delete().eq("id", id);
+        loadUserFiles();
+    };
+  </script>
+</body>
+</html>

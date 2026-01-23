@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apostille Verification System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+</head>
+<body>
+<header class="header">
+  <div class="header-container">
+    <div class="header-text">
+      <h1>Legalization / Apostille Verification System</h1>
+    </div>
+  </div>
+</header>
+
+<main class="content">
+  <form class="verification-form" id="searchForm">
+    <div style="text-align:center; margin-bottom:15px;">
+        <h2 style="font-size: 18px; color: #0b3d91; margin: 0;">Verify Document</h2>
+        <p style="font-size: 13px; color: #666; margin: 8px 0 0;">Enter details to verify authenticity</p>
+    </div>
+
+    <label for="apostille-input">Apostille Number</label>
+    <input type="text" id="apostille-input" placeholder="APO-XXXX-XXXX" required>
+
+    <label for="date-input">Date of Issue</label>
+    <input type="date" id="date-input" required>
+
+    <label for="referral-input">Referral Code (Optional)</label>
+    <input type="text" id="referral-input" placeholder="Code">
+
+    <button type="submit" class="btn btn-main">Verify Document</button>
+
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button type="button" id="scan-qr-btn" class="btn btn-secondary" style="flex: 1;">
+            📷 Scan QR-code
+        </button>
+        <a href="samples.html" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">
+            View Samples
+        </a>
+    </div>
+
+    <a href="dashboard.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">
+        Upload your Document (Login)
+    </a>
+  </form>
+</main>
+
+<div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; border-radius:8px; max-width:400px; width:90%; position:relative; text-align: center;">
+    
+    <button id="close-qr" style="position:absolute; right:10px; top:5px; border:none; background:none; font-size:24px; cursor:pointer;">&times;</button>
+    
+    <h3 style="margin-bottom: 15px;">Scan QR Code</h3>
+    
+    <div id="qr-reader" style="width:100%; min-height: 250px; background: #f0f0f0;"></div>
+    
+    <p id="qr-status" style="font-size:14px; color:#d9534f; margin-top:10px; font-weight: bold;"></p>
+    
+    <p style="font-size:12px; color:#666; margin-top:10px;">
+        Point your camera at the QR code on the document.
+    </p>
+  </div>
+</div>
+
+<script>
+    // === ЛОГИКА ФОРМЫ ПОИСКА ===
+    document.getElementById("searchForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const apostille = document.getElementById("apostille-input").value.trim();
+        const date = document.getElementById("date-input").value;
+        const referral = document.getElementById("referral-input").value.trim();
+        
+        if(apostille && date) {
+            let url = `index.html?apostille=${encodeURIComponent(apostille)}&date=${encodeURIComponent(date)}`;
+            if(referral) url += `&ref=${encodeURIComponent(referral)}`;
+            window.location.href = url;
+        }
+    });
+
+    // === ЛОГИКА СКАНЕРА QR ===
+    const scanBtn = document.getElementById("scan-qr-btn");
+    const modal = document.getElementById("qr-modal");
+    const closeBtn = document.getElementById("close-qr");
+    const statusText = document.getElementById("qr-status");
+    let html5QrcodeScanner = null;
+
+    scanBtn.addEventListener("click", () => {
+        modal.style.display = "flex";
+        statusText.textContent = "Инициализация камеры...";
+        startScanner();
+    });
+
+    closeBtn.addEventListener("click", stopScanner);
+    
+    // Закрыть при клике на черный фон
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) stopScanner();
+    });
+
+    function startScanner() {
+        // 1. Проверка: загрузилась ли библиотека?
+        if (typeof Html5Qrcode === "undefined") {
+            statusText.textContent = "Ошибка: Библиотека сканера не загрузилась. Проверьте интернет.";
+            return;
+        }
+
+        // 2. Проверка HTTPS (камера не работает без него, кроме localhost)
+        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+            statusText.textContent = "Ошибка: Камера работает только по HTTPS! Залейте сайт на Vercel.";
+            return;
+        }
+
+        statusText.textContent = "Запрос доступа к камере... Разрешите доступ!";
+
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Запуск камеры
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, // Использовать заднюю камеру
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).catch(err => {
+            console.error("Ошибка камеры:", err);
+            statusText.textContent = "Ошибка запуска камеры: " + err;
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Code matched = ${decodedText}`, decodedResult);
+        statusText.style.color = "green";
+        statusText.textContent = "QR-код найден! Переход...";
+        
+        stopScanner();
+        
+        // Проверяем, содержит ли код нужные параметры
+        // Он может быть полной ссылкой (https://...) или просто параметрами
+        if (decodedText.includes("apostille=") && decodedText.includes("date=")) {
+            window.location.href = decodedText;
+        } else {
+            alert("QR-код не от этого сайта (нет параметров апостиля).");
+        }
+    }
+
+    function onScanFailure(error) {
+        // Ошибки сканирования в процессе (пока ищет код) — это нормально, не выводим их
+        // console.warn(`Code scan error = ${error}`);
+        // Если статус висел "Запрос доступа", меняем его на "Сканирование..."
+        if (statusText.textContent.includes("Запрос")) {
+            statusText.style.color = "#0b3d91";
+            statusText.textContent = "Сканирование... Наведите камеру.";
+        }
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+                modal.style.display = "none";
+                statusText.textContent = "";
+            }).catch(err => {
+                console.error("Failed to stop scanner", err);
+                modal.style.display = "none";
+            });
+        } else {
+            modal.style.display = "none";
+        }
+    }
+</script>
+</body>
+</html>

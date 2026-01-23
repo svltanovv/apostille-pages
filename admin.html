@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apostille Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .qr-container {
+      display: flex;
+      justify-content: center;
+      margin: 12px 0;
+      padding: 10px;
+      background: #f5f6fa;
+      border-radius: 6px;
+    }
+
+    .qr-container canvas {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .file-card {
+      background-color: #ffffff;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .file-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #212529;
+    }
+
+    .file-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .file-card-actions a,
+    .file-card-actions button {
+      flex: 1;
+      min-width: 80px;
+      padding: 6px 8px;
+      font-size: 12px;
+      text-align: center;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s ease;
+    }
+
+    .btn-open-pdf {
+      background-color: #0b3d91;
+      color: white;
+    }
+
+    .btn-open-pdf:hover {
+      background-color: #07285c;
+    }
+
+    .btn-download-qr {
+      background-color: #e9ecef;
+      color: #212529;
+      border: 1px solid #ced4da;
+    }
+
+    .btn-download-qr:hover {
+      background-color: #dde1e5;
+    }
+
+    .btn-delete {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background-color: #c82333;
+    }
+
+    .search-box {
+      margin-bottom: 16px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #0b3d91;
+      box-shadow: 0 0 0 2px rgba(11, 61, 145, 0.15);
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .no-documents {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+      font-size: 14px;
+    }
+
+    .status-message {
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .status-message.success {
+      display: block;
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status-message.error {
+      display: block;
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <div class="header-text">
+        <h1>Apostille Admin Panel</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="content" style="max-width: 800px">
+    <div id="login-block">
+      <h2 style="margin-bottom: 15px; color: #2f5233">Admin Login</h2>
+
+      <label for="admin-email">Email</label>
+      <input type="email" id="admin-email" placeholder="admin@example.com" />
+
+      <label for="admin-password">Password</label>
+      <input type="password" id="admin-password" placeholder="Enter password" />
+
+      <button class="btn btn-main" id="login-btn">Login</button>
+    </div>
+
+    <div id="admin-block" style="display: none">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          gap: 10px;
+        "
+      >
+        <h2 style="color: #2f5233; margin: 0">Upload Apostille Document</h2>
+        <button class="btn btn-secondary" id="logout-btn">Logout</button>
+      </div>
+
+      <div id="status-message" class="status-message"></div>
+
+      <label for="apostille-number">Apostille Number</label>
+      <input
+        type="text"
+        id="apostille-number"
+        placeholder="e.g., APO-2026-001"
+      />
+
+      <label for="issue-date">Date of Issue</label>
+      <input type="date" id="issue-date" />
+
+      <label for="referral-code">Referral Code (Optional)</label>
+      <input type="text" id="referral-code" placeholder="REF-123" />
+
+      <label for="pdf-file">PDF File</label>
+      <input type="file" id="pdf-file" accept="application/pdf" />
+
+      <button class="btn btn-main" id="upload-btn" style="margin-top: 10px; width: 100%">
+        Upload PDF
+      </button>
+
+      <h3 style="margin: 28px 0 12px; color: #2f5233">Uploaded Documents</h3>
+
+      <div class="search-box">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search by apostille number..."
+        />
+      </div>
+
+      <div id="file-list" class="file-grid"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ТВОИ КЛЮЧИ SUPABASE (Убедись, что они тут правильные)
+    const SUPABASE_URL = "https://tfdrjiztsbuusngfdmye.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZHJqaXp0c2J1dXNuZ2ZkbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDMwMDMsImV4cCI6MjA4NDM3OTAwM30.jFFfWfU1vFrE_0XvnVm0wL1cW0O6QHtwAUbUv9mGMC4";
+
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginBlock = document.getElementById("login-block");
+    const adminBlock = document.getElementById("admin-block");
+    const fileList = document.getElementById("file-list");
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const uploadBtn = document.getElementById("upload-btn");
+    const statusMessage = document.getElementById("status-message");
+    const searchInput = document.getElementById("search-input");
+
+    let allDocuments = [];
+
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await db.auth.getSession();
+
+      if (session) {
+        loginBlock.style.display = "none";
+        adminBlock.style.display = "block";
+        loadFiles();
+      } else {
+        loginBlock.style.display = "block";
+        adminBlock.style.display = "none";
+      }
+    }
+
+    // Login
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("admin-email").value.trim();
+      const password = document
+        .getElementById("admin-password")
+        .value.trim();
+
+      if (!email || !password) {
+        showStatus("Please enter email and password", "error");
+        return;
+      }
+
+      const { data, error } = await db.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Login error:", error);
+        showStatus("Login error: " + error.message, "error");
+        return;
+      }
+
+      showStatus("Logged in successfully", "success");
+      checkSession();
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
+      await db.auth.signOut();
+      await checkSession();
+    });
+
+    // Upload PDF
+    uploadBtn.addEventListener("click", async () => {
+      const apostille = document.getElementById("apostille-number").value.trim();
+      const issueDate = document.getElementById("issue-date").value.trim();
+      // НОВОЕ: Получаем реферальный код
+      const referralCode = document.getElementById("referral-code").value.trim();
+      
+      const fileInput = document.getElementById("pdf-file");
+      const file = fileInput.files[0];
+
+      if (!apostille || !issueDate || !file) {
+        showStatus("Please fill in all required fields and select a PDF", "error");
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "Uploading...";
+
+      const filePath = `${Date.now()}_${file.name}`;
+
+      const { data: uploadData, error: uploadError } = await db.storage
+        .from("apostilles")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        showStatus("Upload error: " + uploadError.message, "error");
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = "Upload PDF";
+        return;
+      }
+
+      // НОВОЕ: Добавляем referral_code в базу данных
+      const { error: dbError } = await db.from("apostilles").insert({
+        apostille_number: apostille,
+        issue_date: issueDate,
+        referral_code: referralCode, // <-- Вот оно
+        file_path: filePath,
+      });
+
+      if (dbError) {
+        console.error("DB error:", dbError);
+        showStatus("Database error: " + dbError.message, "error");
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = "Upload PDF";
+        return;
+      }
+
+      showStatus("Document uploaded successfully", "success");
+      fileInput.value = "";
+      document.getElementById("apostille-number").value = "";
+      document.getElementById("issue-date").value = "";
+      document.getElementById("referral-code").value = ""; // Очищаем поле рефералки
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload PDF";
+      loadFiles();
+    });
+
+    // Load files
+    async function loadFiles() {
+      fileList.innerHTML = "<div class='no-documents'>Loading...</div>";
+
+      const { data, error } = await db
+        .from("apostilles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Load error:", error);
+        fileList.innerHTML = "<div class='no-documents'>Error loading documents</div>";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        fileList.innerHTML = "<div class='no-documents'>No documents uploaded yet</div>";
+        return;
+      }
+
+      allDocuments = data;
+      renderFiles(data);
+    }
+
+    // Render files with search
+    function renderFiles(files) {
+      fileList.innerHTML = "";
+
+      if (files.length === 0) {
+        fileList.innerHTML = "<div class='no-documents'>No documents found</div>";
+        return;
+      }
+
+      files.forEach((row) => {
+        const card = document.createElement("div");
+        card.className = "file-card";
+
+        const { data: publicData } = db
+          .storage
+          .from("apostilles")
+          .getPublicUrl(row.file_path);
+        const url = publicData.publicUrl;
+
+        // Ссылка в QR коде ведет на страницу проверки
+        const qrText = `${window.location.origin}/index.html?apostille=${encodeURIComponent(row.apostille_number)}&date=${encodeURIComponent(row.issue_date)}`;
+
+        const qrId = `qr-${row.id}`;
+
+        card.innerHTML = `
+          <strong>Apostille:</strong> ${row.apostille_number}<br>
+          <strong>Issue Date:</strong> ${row.issue_date}<br>
+          ${row.referral_code ? `<strong>Referral:</strong> ${row.referral_code}<br>` : ''}
+          <div id="${qrId}" class="qr-container"></div>
+          <div class="file-card-actions">
+            <a href="${url}" target="_blank" class="btn-open-pdf">Open PDF</a>
+            <button class="btn-download-qr" onclick="downloadQR('${qrId}', '${row.apostille_number}')">Download QR</button>
+            <button class="btn-delete" onclick="deleteDocument(${row.id}, '${row.file_path}')">Delete</button>
+          </div>
+        `;
+
+        fileList.appendChild(card);
+
+        // Generate QR code after card is added to DOM
+        setTimeout(() => {
+          new QRCode(document.getElementById(qrId), {
+            text: qrText,
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H,
+          });
+        }, 100);
+      });
+    }
+
+    // Search functionality
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allDocuments.filter((doc) =>
+        doc.apostille_number.toLowerCase().includes(query)
+      );
+      renderFiles(filtered);
+    });
+
+    // Delete document
+    window.deleteDocument = async (docId, filePath) => {
+      if (!confirm("Are you sure you want to delete this document?")) {
+        return;
+      }
+
+      // Delete from storage
+      const { error: storageError } = await db.storage
+        .from("apostilles")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+        showStatus("Error deleting file: " + storageError.message, "error");
+        return;
+      }
+
+      // Delete from database
+      const { error: dbError } = await db
+        .from("apostilles")
+        .delete()
+        .eq("id", docId);
+
+      if (dbError) {
+        console.error("DB delete error:", dbError);
+        showStatus("Error deleting record: " + dbError.message, "error");
+        return;
+      }
+
+      showStatus("Document deleted successfully", "success");
+      loadFiles();
+    };
+
+    // Download QR code
+    window.downloadQR = (elementId, apostilleNumber) => {
+      const element = document.getElementById(elementId);
+      const canvas = element.querySelector("canvas");
+
+      if (!canvas) {
+        alert("QR code not ready yet, please try again");
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL();
+      link.download = `QR_${apostilleNumber}.png`;
+      link.click();
+    };
+
+    // Show status message
+    function showStatus(message, type) {
+      statusMessage.textContent = message;
+      statusMessage.className = `status-message ${type}`;
+      setTimeout(() => {
+        statusMessage.className = "status-message";
+      }, 4000);
+    }
+
+    checkSession();
+  </script>
+</body>
+</html>
