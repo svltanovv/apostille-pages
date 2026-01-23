@@ -67,7 +67,7 @@
 </div>
 
 <script>
-    // === ЛОГИКА ФОРМЫ ПОИСКА ===
+    // --- Стандартная логика поиска (оставляем как есть) ---
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
@@ -81,7 +81,7 @@
         }
     });
 
-    // === ЛОГИКА СКАНЕРА QR (ИСПРАВЛЕННАЯ) ===
+    // --- УПРОЩЕННЫЙ СКАНЕР ---
     const scanBtn = document.getElementById("scan-qr-btn");
     const modal = document.getElementById("qr-modal");
     const closeBtn = document.getElementById("close-qr");
@@ -90,81 +90,57 @@
 
     scanBtn.addEventListener("click", () => {
         modal.style.display = "flex";
-        statusText.style.color = "#333";
-        statusText.innerText = "Запуск камеры... Разрешите доступ.";
+        statusText.style.color = "blue";
+        statusText.innerText = "Загрузка камеры...";
         startScanner();
     });
 
     closeBtn.addEventListener("click", stopScanner);
-    
-    // Закрыть при клике на черный фон
-    modal.addEventListener("click", (e) => {
-        if (e.target === modal) stopScanner();
-    });
+    modal.addEventListener("click", (e) => { if (e.target === modal) stopScanner(); });
 
     function startScanner() {
-        // 1. Проверка библиотеки
+        // Проверка 1: Библиотека
         if (typeof Html5Qrcode === "undefined") {
-            statusText.innerText = "Ошибка: Скрипт сканера не загрузился. Проверьте интернет.";
+            statusText.innerText = "ОШИБКА: Скрипт не загрузился. Обновите страницу.";
             return;
         }
 
-        // 2. Проверка HTTPS (КРИТИЧНО ДЛЯ ТЕЛЕФОНОВ)
-        const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-        const isHttps = location.protocol === "https:";
-        
-        if (!isHttps && !isLocal) {
-            statusText.style.color = "red";
-            statusText.innerText = "Ошибка: Камера работает ТОЛЬКО по HTTPS. (GitHub Pages дает HTTPS автоматически).";
+        // Проверка 2: HTTPS
+        if (location.protocol !== "https:" && location.hostname !== "localhost") {
+            statusText.innerText = "ОШИБКА: Нужен HTTPS. Вы зашли через http:// ?";
             return;
         }
 
-        // Очистка перед запуском
-        if (html5QrcodeScanner) {
-             try { html5QrcodeScanner.clear(); } catch(e){}
-        }
+        // Очистка старого
+        if (html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e){} }
 
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
 
-        // 3. АДАПТИВНЫЙ РАЗМЕР (ЧТОБЫ НЕ БЫЛО ОШИБОК НА ТЕЛЕФОНЕ)
-        // Если экран меньше 300px, берем 70% от него. Иначе 250px.
-        const qrBoxSize = window.innerWidth < 350 ? Math.floor(window.innerWidth * 0.7) : 250;
-
-        const config = { 
-            fps: 10, 
-            qrbox: { width: qrBoxSize, height: qrBoxSize },
-            aspectRatio: 1.0 
-        };
-
-        // Запуск
+        // ЗАПУСК БЕЗ QRBOX (Самый надежный способ для теста)
+        // Мы убрали qrbox и aspectRatio, чтобы камера просто включилась
         html5QrcodeScanner.start(
-            { facingMode: "environment" }, // Задняя камера
-            config,
-            onScanSuccess,
-            (errorMessage) => {
-                // Игнорируем ошибки в процессе сканирования (когда ищет код)
+            { facingMode: "environment" }, 
+            { fps: 10 }, // Минимальные настройки
+            (decodedText) => {
+                // Успех
+                statusText.style.color = "green";
+                statusText.innerText = "Найдено! " + decodedText;
+                stopScanner();
+                if (decodedText.includes("apostille=")) {
+                    window.location.href = decodedText;
+                } else {
+                    alert("QR код считан: " + decodedText);
+                }
+            },
+            (error) => {
+                // Ошибки во время поиска игнорируем
             }
         ).catch(err => {
-            console.error("Camera Error:", err);
+            // ВОТ ЭТОТ ТЕКСТ ВАЖЕН
+            console.error("Critical Error:", err);
             statusText.style.color = "red";
-            // Выводим текст ошибки на экран
-            statusText.innerText = "Не удалось запустить камеру: " + err;
+            statusText.innerText = "КРИТИЧЕСКАЯ ОШИБКА: " + err;
         });
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Scan result: ${decodedText}`);
-        statusText.style.color = "green";
-        statusText.innerText = "Код найден! Переход...";
-        
-        stopScanner();
-
-        // Проверяем, наша ли это ссылка
-        if (decodedText.includes("apostille=") && decodedText.includes("date=")) {
-             window.location.href = decodedText;
-        } else {
-            alert("QR-код считан, но это не документ апостиля.\nТекст: " + decodedText);
-        }
     }
 
     function stopScanner() {
@@ -172,11 +148,7 @@
             html5QrcodeScanner.stop().then(() => {
                 html5QrcodeScanner.clear();
                 modal.style.display = "none";
-                statusText.innerText = "";
-            }).catch(err => {
-                console.error("Stop error", err);
-                modal.style.display = "none";
-            });
+            }).catch(() => { modal.style.display = "none"; });
         } else {
             modal.style.display = "none";
         }
