@@ -81,7 +81,7 @@
         }
     });
 
-    // === ЛОГИКА СКАНЕРА QR ===
+    // === ЛОГИКА СКАНЕРА QR (ИСПРАВЛЕННАЯ) ===
     const scanBtn = document.getElementById("scan-qr-btn");
     const modal = document.getElementById("qr-modal");
     const closeBtn = document.getElementById("close-qr");
@@ -91,36 +91,44 @@
     scanBtn.addEventListener("click", () => {
         modal.style.display = "flex";
         statusText.style.color = "#333";
-        statusText.textContent = "Запуск камеры...";
+        statusText.innerText = "Запуск камеры... Разрешите доступ.";
         startScanner();
     });
 
     closeBtn.addEventListener("click", stopScanner);
+    
+    // Закрыть при клике на черный фон
     modal.addEventListener("click", (e) => {
         if (e.target === modal) stopScanner();
     });
 
     function startScanner() {
+        // 1. Проверка библиотеки
         if (typeof Html5Qrcode === "undefined") {
-            statusText.textContent = "Ошибка: Библиотека сканера не загрузилась.";
+            statusText.innerText = "Ошибка: Скрипт сканера не загрузился. Проверьте интернет.";
             return;
         }
 
-        // Проверка HTTPS
-        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-            statusText.textContent = "Ошибка: Камера работает только по HTTPS (GitHub Pages).";
+        // 2. Проверка HTTPS (КРИТИЧНО ДЛЯ ТЕЛЕФОНОВ)
+        const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        const isHttps = location.protocol === "https:";
+        
+        if (!isHttps && !isLocal) {
+            statusText.style.color = "red";
+            statusText.innerText = "Ошибка: Камера работает ТОЛЬКО по HTTPS. (GitHub Pages дает HTTPS автоматически).";
             return;
         }
 
+        // Очистка перед запуском
         if (html5QrcodeScanner) {
-            // Если сканер уже был создан, очистим его
-            html5QrcodeScanner.clear().catch(err => console.error("Clear error", err));
+             try { html5QrcodeScanner.clear(); } catch(e){}
         }
 
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
 
-        // Адаптивный размер квадрата сканирования
-        const qrBoxSize = Math.min(250, window.innerWidth * 0.7);
+        // 3. АДАПТИВНЫЙ РАЗМЕР (ЧТОБЫ НЕ БЫЛО ОШИБОК НА ТЕЛЕФОНЕ)
+        // Если экран меньше 300px, берем 70% от него. Иначе 250px.
+        const qrBoxSize = window.innerWidth < 350 ? Math.floor(window.innerWidth * 0.7) : 250;
 
         const config = { 
             fps: 10, 
@@ -128,38 +136,34 @@
             aspectRatio: 1.0 
         };
 
+        // Запуск
         html5QrcodeScanner.start(
-            { facingMode: "environment" }, 
+            { facingMode: "environment" }, // Задняя камера
             config,
             onScanSuccess,
             (errorMessage) => {
-                // Ошибки сканирования в процессе игнорируем, это нормально
+                // Игнорируем ошибки в процессе сканирования (когда ищет код)
             }
         ).catch(err => {
-            console.error("Ошибка запуска:", err);
+            console.error("Camera Error:", err);
             statusText.style.color = "red";
-            statusText.textContent = "Ошибка доступа к камере: " + err;
+            // Выводим текст ошибки на экран
+            statusText.innerText = "Не удалось запустить камеру: " + err;
         });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
         console.log(`Scan result: ${decodedText}`);
         statusText.style.color = "green";
-        statusText.textContent = "Код найден! Обработка...";
+        statusText.innerText = "Код найден! Переход...";
         
         stopScanner();
 
-        // Проверяем, содержит ли QR ссылку или параметры
+        // Проверяем, наша ли это ссылка
         if (decodedText.includes("apostille=") && decodedText.includes("date=")) {
-            // Если это полная ссылка - переходим
-            if (decodedText.startsWith("http")) {
-                 window.location.href = decodedText;
-            } else {
-                 // Если это просто текст, пробуем сделать его ссылкой (на всякий случай)
-                 window.location.href = decodedText;
-            }
+             window.location.href = decodedText;
         } else {
-            alert("Этот QR-код не от нашего сайта.\nСодержимое: " + decodedText);
+            alert("QR-код считан, но это не документ апостиля.\nТекст: " + decodedText);
         }
     }
 
@@ -168,7 +172,7 @@
             html5QrcodeScanner.stop().then(() => {
                 html5QrcodeScanner.clear();
                 modal.style.display = "none";
-                statusText.textContent = "";
+                statusText.innerText = "";
             }).catch(err => {
                 console.error("Stop error", err);
                 modal.style.display = "none";
@@ -178,5 +182,3 @@
         }
     }
 </script>
-</body>
-</html>
