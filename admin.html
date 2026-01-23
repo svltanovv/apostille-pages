@@ -32,9 +32,9 @@
   <main class="content" style="max-width: 800px">
     <div id="login-block">
       <h2 style="margin-bottom: 15px; color: #2f5233">Admin Login</h2>
-      <label for="admin-email">Email</label>
+      <label>Email</label>
       <input type="email" id="admin-email" placeholder="admin@example.com" />
-      <label for="admin-password">Password</label>
+      <label>Password</label>
       <input type="password" id="admin-password" placeholder="Enter password" />
       <button class="btn btn-main" id="login-btn">Login</button>
     </div>
@@ -136,68 +136,4 @@
 
     // --- List Files ---
     async function loadFiles() {
-      const list = document.getElementById("file-list");
-      list.innerHTML = "Loading...";
-      const { data, error } = await db.from("apostilles").select("*").order("created_at", { ascending: false });
-      
-      if (error) return list.innerHTML = "Error loading";
-      if (!data.length) return list.innerHTML = "<div class='no-documents'>No documents</div>";
-
-      allDocuments = data;
-      renderFiles(data);
-    }
-
-    function renderFiles(files) {
-      const list = document.getElementById("file-list");
-      list.innerHTML = "";
-      
-      // === ЖЕСТКАЯ ПРИВЯЗКА АДРЕСА ===
-      const basePath = "https://svltanovv.github.io/apostille-pages";
-
-      files.forEach((row) => {
-        const { data: publicData } = db.storage.from("apostilles").getPublicUrl(row.file_path);
-        
-        // Формируем ссылку: https://svltanovv.github.io/apostille-pages/index.html...
-        const qrLink = `${basePath}/index.html?apostille=${encodeURIComponent(row.apostille_number)}&date=${encodeURIComponent(row.issue_date)}`;
-        
-        const card = document.createElement("div");
-        card.className = "file-card";
-        const qrId = `qr-${row.id}`;
-
-        card.innerHTML = `
-          <strong>${row.apostille_number}</strong> (${row.issue_date})<br>
-          ${row.referral_code ? `<small>Ref: ${row.referral_code}</small>` : ''}
-          <div id="${qrId}" class="qr-container"></div>
-          <div class="file-card-actions">
-            <a href="${publicData.publicUrl}" target="_blank" class="btn-open-pdf">PDF</a>
-            <button class="btn-delete" onclick="deleteDoc(${row.id}, '${row.file_path}')">Delete</button>
-          </div>
-        `;
-        list.appendChild(card);
-
-        setTimeout(() => {
-          new QRCode(document.getElementById(qrId), { text: qrLink, width: 128, height: 128 });
-        }, 100);
-      });
-    }
-
-    document.getElementById("search-input").addEventListener("input", (e) => {
-      const query = e.target.value.toLowerCase();
-      renderFiles(allDocuments.filter(d => d.apostille_number.toLowerCase().includes(query)));
-    });
-
-    window.deleteDoc = async (id, path) => {
-      if (!confirm("Delete?")) return;
-      await db.storage.from("apostilles").remove([path]);
-      await db.from("apostilles").delete().eq("id", id);
-      loadFiles();
-    };
-
-    function showStatus(msg, type) {
-      const el = document.getElementById("status-message");
-      el.textContent = msg; el.className = `status-message ${type}`;
-      setTimeout(() => el.style.display = 'none', 4000);
-    }
-  </script>
-</body>
-</html>
+      const list = document.getElementById("file-
