@@ -49,19 +49,19 @@
   </form>
 </main>
 
-<div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+<div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
   <div style="background:#fff; padding:20px; border-radius:8px; max-width:400px; width:90%; position:relative; text-align: center;">
     
     <button id="close-qr" style="position:absolute; right:10px; top:5px; border:none; background:none; font-size:24px; cursor:pointer;">&times;</button>
     
     <h3 style="margin-bottom: 15px;">Scan QR Code</h3>
     
-    <div id="qr-reader" style="width:100%; min-height: 250px; background: #f0f0f0;"></div>
+    <div id="qr-reader" style="width:100%;"></div>
     
-    <p id="qr-status" style="font-size:14px; color:#d9534f; margin-top:10px; font-weight: bold;"></p>
+    <p id="qr-status" style="font-size:13px; color:#d9534f; margin-top:10px; font-weight: bold; min-height: 20px;"></p>
     
     <p style="font-size:12px; color:#666; margin-top:10px;">
-        Point your camera at the QR code on the document.
+        Point your camera at the QR code.
     </p>
   </div>
 </div>
@@ -90,71 +90,76 @@
 
     scanBtn.addEventListener("click", () => {
         modal.style.display = "flex";
-        statusText.textContent = "Инициализация камеры...";
+        statusText.style.color = "#333";
+        statusText.textContent = "Запуск камеры...";
         startScanner();
     });
 
     closeBtn.addEventListener("click", stopScanner);
-    
-    // Закрыть при клике на черный фон
     modal.addEventListener("click", (e) => {
         if (e.target === modal) stopScanner();
     });
 
     function startScanner() {
-        // 1. Проверка: загрузилась ли библиотека?
         if (typeof Html5Qrcode === "undefined") {
-            statusText.textContent = "Ошибка: Библиотека сканера не загрузилась. Проверьте интернет.";
+            statusText.textContent = "Ошибка: Библиотека сканера не загрузилась.";
             return;
         }
 
-        // 2. Проверка HTTPS (камера не работает без него, кроме localhost)
+        // Проверка HTTPS
         if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-            statusText.textContent = "Ошибка: Камера работает только по HTTPS! Залейте сайт на Vercel.";
+            statusText.textContent = "Ошибка: Камера работает только по HTTPS (GitHub Pages).";
             return;
         }
 
-        statusText.textContent = "Запрос доступа к камере... Разрешите доступ!";
+        if (html5QrcodeScanner) {
+            // Если сканер уже был создан, очистим его
+            html5QrcodeScanner.clear().catch(err => console.error("Clear error", err));
+        }
 
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
 
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        // Адаптивный размер квадрата сканирования
+        const qrBoxSize = Math.min(250, window.innerWidth * 0.7);
 
-        // Запуск камеры
+        const config = { 
+            fps: 10, 
+            qrbox: { width: qrBoxSize, height: qrBoxSize },
+            aspectRatio: 1.0 
+        };
+
         html5QrcodeScanner.start(
-            { facingMode: "environment" }, // Использовать заднюю камеру
+            { facingMode: "environment" }, 
             config,
             onScanSuccess,
-            onScanFailure
+            (errorMessage) => {
+                // Ошибки сканирования в процессе игнорируем, это нормально
+            }
         ).catch(err => {
-            console.error("Ошибка камеры:", err);
-            statusText.textContent = "Ошибка запуска камеры: " + err;
+            console.error("Ошибка запуска:", err);
+            statusText.style.color = "red";
+            statusText.textContent = "Ошибка доступа к камере: " + err;
         });
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code matched = ${decodedText}`, decodedResult);
+        console.log(`Scan result: ${decodedText}`);
         statusText.style.color = "green";
-        statusText.textContent = "QR-код найден! Переход...";
+        statusText.textContent = "Код найден! Обработка...";
         
         stopScanner();
-        
-        // Проверяем, содержит ли код нужные параметры
-        // Он может быть полной ссылкой (https://...) или просто параметрами
-        if (decodedText.includes("apostille=") && decodedText.includes("date=")) {
-            window.location.href = decodedText;
-        } else {
-            alert("QR-код не от этого сайта (нет параметров апостиля).");
-        }
-    }
 
-    function onScanFailure(error) {
-        // Ошибки сканирования в процессе (пока ищет код) — это нормально, не выводим их
-        // console.warn(`Code scan error = ${error}`);
-        // Если статус висел "Запрос доступа", меняем его на "Сканирование..."
-        if (statusText.textContent.includes("Запрос")) {
-            statusText.style.color = "#0b3d91";
-            statusText.textContent = "Сканирование... Наведите камеру.";
+        // Проверяем, содержит ли QR ссылку или параметры
+        if (decodedText.includes("apostille=") && decodedText.includes("date=")) {
+            // Если это полная ссылка - переходим
+            if (decodedText.startsWith("http")) {
+                 window.location.href = decodedText;
+            } else {
+                 // Если это просто текст, пробуем сделать его ссылкой (на всякий случай)
+                 window.location.href = decodedText;
+            }
+        } else {
+            alert("Этот QR-код не от нашего сайта.\nСодержимое: " + decodedText);
         }
     }
 
@@ -165,7 +170,7 @@
                 modal.style.display = "none";
                 statusText.textContent = "";
             }).catch(err => {
-                console.error("Failed to stop scanner", err);
+                console.error("Stop error", err);
                 modal.style.display = "none";
             });
         } else {
