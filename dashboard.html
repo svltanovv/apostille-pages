@@ -121,8 +121,8 @@
 
         container.innerHTML = "";
         
-        // === ВАЖНОЕ ИСПРАВЛЕНИЕ ДЛЯ QR ССЫЛКИ ===
-        const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        // === ЖЕСТКАЯ ПРИВЯЗКА АДРЕСА ===
+        const basePath = "https://svltanovv.github.io/apostille-pages";
 
         data.forEach(item => {
             const div = document.createElement("div");
