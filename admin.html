@@ -73,4 +73,131 @@
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     const SUPABASE_URL = "https://tfdrjiztsbuusngfdmye.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZHJqaXp0c2J1dXNuZ2ZkbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDMwMDMsImV4cCI6MjA4NDM3OTAwM30.jFFfWfU1vFrE_0XvnVm0wL1cW0O6QHtwAUbUv9mGMC4";
+
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let allDocuments = [];
+
+    // --- Login Logic ---
+    async function checkSession() {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        document.getElementById("login-block").style.display = "none";
+        document.getElementById("admin-block").style.display = "block";
+        loadFiles();
+      } else {
+        document.getElementById("login-block").style.display = "block";
+        document.getElementById("admin-block").style.display = "none";
+      }
+    }
+    checkSession();
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const email = document.getElementById("admin-email").value.trim();
+      const password = document.getElementById("admin-password").value.trim();
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) showStatus("Login error: " + error.message, "error");
+      else checkSession();
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await db.auth.signOut();
+      checkSession();
+    });
+
+    // --- Upload Logic ---
+    document.getElementById("upload-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("upload-btn");
+      const apostille = document.getElementById("apostille-number").value.trim();
+      const issueDate = document.getElementById("issue-date").value.trim();
+      const referralCode = document.getElementById("referral-code").value.trim();
+      const file = document.getElementById("pdf-file").files[0];
+
+      if (!apostille || !issueDate || !file) return showStatus("Fill required fields", "error");
+
+      btn.disabled = true; btn.textContent = "Uploading...";
+      const filePath = `${Date.now()}_${file.name}`;
+
+      const { error: uploadError } = await db.storage.from("apostilles").upload(filePath, file);
+      if (uploadError) { btn.disabled = false; return showStatus(uploadError.message, "error"); }
+
+      const { error: dbError } = await db.from("apostilles").insert({
+        apostille_number: apostille, issue_date: issueDate, referral_code: referralCode, file_path: filePath
+      });
+
+      if (dbError) { btn.disabled = false; return showStatus(dbError.message, "error"); }
+
+      showStatus("Success", "success");
+      document.getElementById("apostille-number").value = "";
+      document.getElementById("pdf-file").value = "";
+      btn.disabled = false; btn.textContent = "Upload PDF";
+      loadFiles();
+    });
+
+    // --- List Files ---
+    async function loadFiles() {
+      const list = document.getElementById("file-list");
+      list.innerHTML = "Loading...";
+      const { data, error } = await db.from("apostilles").select("*").order("created_at", { ascending: false });
+      
+      if (error) return list.innerHTML = "Error loading";
+      if (!data.length) return list.innerHTML = "<div class='no-documents'>No documents</div>";
+
+      allDocuments = data;
+      renderFiles(data);
+    }
+
+    function renderFiles(files) {
+      const list = document.getElementById("file-list");
+      list.innerHTML = "";
+      
+      // === ЖЕСТКАЯ ПРИВЯЗКА АДРЕСА ===
+      const basePath = "https://svltanovv.github.io/apostille-pages";
+
+      files.forEach((row) => {
+        const { data: publicData } = db.storage.from("apostilles").getPublicUrl(row.file_path);
+        
+        // Формируем ссылку: https://svltanovv.github.io/apostille-pages/index.html...
+        const qrLink = `${basePath}/index.html?apostille=${encodeURIComponent(row.apostille_number)}&date=${encodeURIComponent(row.issue_date)}`;
+        
+        const card = document.createElement("div");
+        card.className = "file-card";
+        const qrId = `qr-${row.id}`;
+
+        card.innerHTML = `
+          <strong>${row.apostille_number}</strong> (${row.issue_date})<br>
+          ${row.referral_code ? `<small>Ref: ${row.referral_code}</small>` : ''}
+          <div id="${qrId}" class="qr-container"></div>
+          <div class="file-card-actions">
+            <a href="${publicData.publicUrl}" target="_blank" class="btn-open-pdf">PDF</a>
+            <button class="btn-delete" onclick="deleteDoc(${row.id}, '${row.file_path}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+
+        setTimeout(() => {
+          new QRCode(document.getElementById(qrId), { text: qrLink, width: 128, height: 128 });
+        }, 100);
+      });
+    }
+
+    document.getElementById("search-input").addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase();
+      renderFiles(allDocuments.filter(d => d.apostille_number.toLowerCase().includes(query)));
+    });
+
+    window.deleteDoc = async (id, path) => {
+      if (!confirm("Delete?")) return;
+      await db.storage.from("apostilles").remove([path]);
+      await db.from("apostilles").delete().eq("id", id);
+      loadFiles();
+    };
+
+    function showStatus(msg, type) {
+      const el = document.getElementById("status-message");
+      el.textContent = msg; el.className = `status-message ${type}`;
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
+  </script>
+</body>
+</html>
