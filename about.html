@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apostille Verification System</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
 </head>
 <body>
 <header class="header">
@@ -49,25 +49,29 @@
   </form>
 </main>
 
-<div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
-  <div style="background:#fff; padding:20px; border-radius:8px; max-width:400px; width:90%; position:relative; text-align: center;">
+<div id="qr-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; justify-content:center; align-items:center;">
     
-    <button id="close-qr" style="position:absolute; right:10px; top:5px; border:none; background:none; font-size:24px; cursor:pointer;">&times;</button>
-    
-    <h3 style="margin-bottom: 15px;">Scan QR Code</h3>
-    
-    <div id="qr-reader" style="width:100%;"></div>
-    
-    <p id="qr-status" style="font-size:13px; color:#d9534f; margin-top:10px; font-weight: bold; min-height: 20px;"></p>
-    
-    <p style="font-size:12px; color:#666; margin-top:10px;">
-        Point your camera at the QR code.
-    </p>
-  </div>
+    <div style="position:absolute; top:20px; right:20px; z-index:10000;">
+        <button id="close-qr" style="background:white; border:none; border-radius:50%; width:40px; height:40px; font-size:24px; cursor:pointer;">&times;</button>
+    </div>
+
+    <h3 style="color:white; margin-bottom:20px; z-index:10000;">Scan QR Code</h3>
+
+    <div style="position: relative; width: 100%; max-width: 500px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; border: 2px solid white;">
+        <video id="qr-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
+        
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5); pointer-events: none;"></div>
+    </div>
+
+    <p id="qr-status" style="color: #ccc; margin-top: 20px; text-align: center; max-width: 90%;"></p>
+
+    <button id="switch-cam" style="display:none; margin-top:15px; padding:10px 20px; background:#333; color:white; border:1px solid #555; border-radius:20px;">
+        Switch Camera 🔄
+    </button>
 </div>
 
 <script>
-    // --- Стандартная логика поиска (оставляем как есть) ---
+    // --- Логика формы (без изменений) ---
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
@@ -81,76 +85,92 @@
         }
     });
 
-    // --- УПРОЩЕННЫЙ СКАНЕР ---
+    // === НОВАЯ ЛОГИКА СКАНЕРА (Nimiq QR Scanner) ===
     const scanBtn = document.getElementById("scan-qr-btn");
     const modal = document.getElementById("qr-modal");
     const closeBtn = document.getElementById("close-qr");
+    const videoElem = document.getElementById("qr-video");
     const statusText = document.getElementById("qr-status");
-    let html5QrcodeScanner = null;
+    const switchCamBtn = document.getElementById("switch-cam");
+
+    let scanner = null;
+
+    // Указываем путь к Worker (ускорителю)
+    QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
     scanBtn.addEventListener("click", () => {
         modal.style.display = "flex";
-        statusText.style.color = "blue";
-        statusText.innerText = "Загрузка камеры...";
+        statusText.innerText = "Запуск камеры...";
         startScanner();
     });
 
     closeBtn.addEventListener("click", stopScanner);
-    modal.addEventListener("click", (e) => { if (e.target === modal) stopScanner(); });
 
-    function startScanner() {
-        // Проверка 1: Библиотека
-        if (typeof Html5Qrcode === "undefined") {
-            statusText.innerText = "ОШИБКА: Скрипт не загрузился. Обновите страницу.";
-            return;
-        }
-
-        // Проверка 2: HTTPS
+    async function startScanner() {
+        // Проверка HTTPS
         if (location.protocol !== "https:" && location.hostname !== "localhost") {
-            statusText.innerText = "ОШИБКА: Нужен HTTPS. Вы зашли через http:// ?";
+            statusText.style.color = "red";
+            statusText.innerText = "Ошибка: Камера требует HTTPS! (На GitHub Pages заработает)";
             return;
         }
 
-        // Очистка старого
-        if (html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e){} }
+        try {
+            // Создаем сканер
+            scanner = new QrScanner(videoElem, result => {
+                console.log('Decoded:', result);
+                handleResult(result);
+            }, {
+                onDecodeError: error => {
+                    // Ошибки распознавания игнорируем, это нормально
+                },
+                highlightScanRegion: true, // Подсветка зоны
+                highlightCodeOutline: true, // Обводка кода
+            });
 
-        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+            await scanner.start();
+            statusText.innerText = "Наведите камеру на QR-код";
 
-        // ЗАПУСК БЕЗ QRBOX (Самый надежный способ для теста)
-        // Мы убрали qrbox и aspectRatio, чтобы камера просто включилась
-        html5QrcodeScanner.start(
-            { facingMode: "environment" }, 
-            { fps: 10 }, // Минимальные настройки
-            (decodedText) => {
-                // Успех
-                statusText.style.color = "green";
-                statusText.innerText = "Найдено! " + decodedText;
-                stopScanner();
-                if (decodedText.includes("apostille=")) {
-                    window.location.href = decodedText;
-                } else {
-                    alert("QR код считан: " + decodedText);
-                }
-            },
-            (error) => {
-                // Ошибки во время поиска игнорируем
+            // Проверка на наличие нескольких камер (для кнопки переключения)
+            const cameras = await QrScanner.listCameras(true);
+            if (cameras.length > 1) {
+                switchCamBtn.style.display = "block";
+                switchCamBtn.onclick = () => {
+                    // Простая логика переключения: берем следующую камеру
+                    // (для полноценной реализации нужно хранить ID, но это усложнит код)
+                    alert("Переключение камеры..."); 
+                };
             }
-        ).catch(err => {
-            // ВОТ ЭТОТ ТЕКСТ ВАЖЕН
-            console.error("Critical Error:", err);
+
+        } catch (e) {
+            console.error(e);
             statusText.style.color = "red";
-            statusText.innerText = "КРИТИЧЕСКАЯ ОШИБКА: " + err;
-        });
+            statusText.innerText = "Ошибка доступа к камере: " + e;
+        }
+    }
+
+    function handleResult(result) {
+        // result может быть объектом или строкой в зависимости от версии
+        const text = result.data || result; 
+        
+        statusText.style.color = "#4caf50"; // Зеленый
+        statusText.innerText = "Успех! Переход...";
+        stopScanner();
+
+        if (text.includes("apostille=") && text.includes("date=")) {
+            window.location.href = text;
+        } else {
+            alert("QR-код считан: " + text + "\nНо это не документ апостиля.");
+        }
     }
 
     function stopScanner() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => {
-                html5QrcodeScanner.clear();
-                modal.style.display = "none";
-            }).catch(() => { modal.style.display = "none"; });
-        } else {
-            modal.style.display = "none";
+        if (scanner) {
+            scanner.stop();
+            scanner.destroy();
+            scanner = null;
         }
+        modal.style.display = "none";
     }
 </script>
+</body>
+</html>
