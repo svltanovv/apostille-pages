@@ -6,135 +6,72 @@
     <title>Apostille Verified</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-<header class="header">
-    <div class="header-container">
-        <div class="header-text">
-            <h1>Apostille Verified</h1>
-        </div>
-    </div>
-</header>
-
+<header class="header"><div class="header-container"><h1>Apostille Verified</h1></div></header>
 <main class="verified-content">
     <div class="verified-box" id="verifiedBox">
-        <div id="loading" style="text-align: center; padding: 20px;">
-            <p>Verifying document...</p>
-        </div>
+        <div id="loading" style="text-align: center; padding: 20px;"><p>Verifying document...</p></div>
 
         <div id="result-container" style="display: none;">
             <div style="text-align: center; margin-bottom: 20px;">
                  <span style="font-size: 48px; color: #2e7d32;">✓</span>
-                 <h2 style="color: #0b3d91; margin-top: 10px;">Apostille Verified</h2>
+                 <h2 style="color: #0b3d91;">Apostille Verified</h2>
             </div>
-
             <table class="apostille-table">
-                <tr>
-                    <th>Apostille Number</th>
-                    <td id="apostille_field"></td>
-                </tr>
-                <tr>
-                    <th>Date of Issue</th>
-                    <td id="date_field"></td>
-                </tr>
-                <tr>
-                    <th>Status</th>
-                    <td style="color: #2e7d32; font-weight: bold;">Valid</td>
-                </tr>
+                <tr><th>Apostille Number</th><td id="apostille_field"></td></tr>
+                <tr><th>Date of Issue</th><td id="date_field"></td></tr>
+                <tr><th>Status</th><td style="color: #2e7d32; font-weight: bold;">Valid</td></tr>
             </table>
-
             <div style="margin-top: 20px; text-align: center;">
-                <a id="pdf_link" class="btn btn-main" href="#" target="_blank" style="display:none; width: 100%;">
-                    📄 Open Original PDF
-                </a>
+                <a id="pdf_link" class="btn btn-main" href="#" target="_blank" style="display:none; width: 100%;">📄 Open Original PDF</a>
             </div>
-            
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="about.html" class="back-btn">Check Another Document</a>
-            </div>
+            <div style="margin-top: 15px; text-align: center;"><a href="about.html" class="back-btn">Check Another Document</a></div>
         </div>
 
         <div id="error-container" style="display: none; text-align: center;">
             <span style="font-size: 48px; color: #c62828;">✕</span>
-            <h2 style="color: #c62828; margin: 10px 0;">Verification Failed</h2>
+            <h2 style="color: #c62828;">Verification Failed</h2>
             <p id="error-message">Document not found in our database.</p>
-            <a href="about.html" class="back-btn" style="margin-top: 20px;">Try Again</a>
+            <a href="about.html" class="back-btn">Try Again</a>
         </div>
     </div>
 </main>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// ВНИМАНИЕ: Используем те же ключи, что и в admin.html (tfdr...)
 const SUPABASE_URL = "https://tfdrjiztsbuusngfdmye.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZHJqaXp0c2J1dXNuZ2ZkbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDMwMDMsImV4cCI6MjA4NDM3OTAwM30.jFFfWfU1vFrE_0XvnVm0wL1cW0O6QHtwAUbUv9mGMC4";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 const params = new URLSearchParams(window.location.search);
 const apostilleParam = params.get("apostille");
-const dateParam = params.get("date"); // Ищем дату
+const dateParam = params.get("date");
 
-const loadingEl = document.getElementById("loading");
-const resultEl = document.getElementById("result-container");
-const errorEl = document.getElementById("error-container");
-const errorMsg = document.getElementById("error-message");
-
-if (!apostilleParam || !dateParam) {
-    // Если параметров нет, кидаем на поиск
-    window.location.href = "about.html";
-} else {
-    verifyDocument();
-}
+if (!apostilleParam || !dateParam) window.location.href = "about.html";
+else verifyDocument();
 
 async function verifyDocument() {
     try {
-        console.log("Searching for:", apostilleParam, dateParam); // Для отладки
-        
-        const { data, error } = await db
-            .from("apostilles")
-            .select("*")
-            .eq("apostille_number", apostilleParam)
-            .eq("issue_date", dateParam) // Ищем по issue_date
-            .maybeSingle();
+        const { data, error } = await db.from("apostilles").select("*").eq("apostille_number", apostilleParam).eq("issue_date", dateParam).maybeSingle();
+        document.getElementById("loading").style.display = "none";
 
-        loadingEl.style.display = "none";
-
-        if (error) {
-            console.error("Supabase Error:", error);
-            errorEl.style.display = "block";
-            return;
+        if (error || !data) {
+            document.getElementById("error-container").style.display = "block";
+        } else {
+            document.getElementById("apostille_field").textContent = data.apostille_number;
+            document.getElementById("date_field").textContent = data.issue_date;
+            if (data.file_path) {
+                const { data: fileData } = db.storage.from("apostilles").getPublicUrl(data.file_path);
+                document.getElementById("pdf_link").href = fileData.publicUrl;
+                document.getElementById("pdf_link").style.display = "inline-block";
+            }
+            document.getElementById("result-container").style.display = "block";
         }
-
-        if (!data) {
-            console.warn("Document not found");
-            errorEl.style.display = "block";
-            return;
-        }
-
-        document.getElementById("apostille_field").textContent = data.apostille_number;
-        // Форматируем дату для отображения
-        document.getElementById("date_field").textContent = data.issue_date;
-        
-        if (data.file_path) {
-            const { data: fileData } = db.storage.from("apostilles").getPublicUrl(data.file_path);
-            const pdfLink = document.getElementById("pdf_link");
-            pdfLink.href = fileData.publicUrl;
-            pdfLink.style.display = "inline-block";
-        }
-
-        resultEl.style.display = "block";
-
     } catch (e) {
-        console.error(e);
-        loadingEl.style.display = "none";
-        errorEl.style.display = "block";
-        errorMsg.textContent = "System error. Please try again later.";
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("error-container").style.display = "block";
     }
 }
 </script>
 </body>
 </html>
-
