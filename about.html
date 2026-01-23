@@ -9,69 +9,46 @@
 </head>
 <body>
 <header class="header">
-  <div class="header-container">
-    <div class="header-text">
-      <h1>Legalization / Apostille Verification System</h1>
-    </div>
-  </div>
+  <div class="header-container"><div class="header-text"><h1>Legalization / Apostille Verification System</h1></div></div>
 </header>
 
 <main class="content">
   <form class="verification-form" id="searchForm">
     <div style="text-align:center; margin-bottom:15px;">
-        <h2 style="font-size: 18px; color: #0b3d91; margin: 0;">Verify Document</h2>
-        <p style="font-size: 13px; color: #666; margin: 8px 0 0;">Enter details to verify authenticity</p>
+        <h2 style="font-size: 18px; color: #0b3d91;">Verify Document</h2>
+        <p style="font-size: 13px; color: #666;">Enter details to verify authenticity</p>
     </div>
 
-    <label for="apostille-input">Apostille Number</label>
+    <label>Apostille Number</label>
     <input type="text" id="apostille-input" placeholder="APO-XXXX-XXXX" required>
-
-    <label for="date-input">Date of Issue</label>
+    <label>Date of Issue</label>
     <input type="date" id="date-input" required>
-
-    <label for="referral-input">Referral Code (Optional)</label>
+    <label>Referral Code (Optional)</label>
     <input type="text" id="referral-input" placeholder="Code">
 
     <button type="submit" class="btn btn-main">Verify Document</button>
 
     <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button type="button" id="scan-qr-btn" class="btn btn-secondary" style="flex: 1;">
-            📷 Scan QR-code
-        </button>
-        <a href="samples.html" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">
-            View Samples
-        </a>
+        <button type="button" id="scan-qr-btn" class="btn btn-secondary" style="flex: 1;">📷 Scan QR-code</button>
+        <a href="samples.html" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">Samples</a>
     </div>
-
-    <a href="dashboard.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">
-        Upload your Document (Login)
-    </a>
+    <a href="dashboard.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">Upload (Login)</a>
   </form>
 </main>
 
 <div id="qr-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; justify-content:center; align-items:center;">
-    
     <div style="position:absolute; top:20px; right:20px; z-index:10000;">
-        <button id="close-qr" style="background:white; border:none; border-radius:50%; width:40px; height:40px; font-size:24px; cursor:pointer;">&times;</button>
+        <button id="close-qr" style="background:white; border:none; border-radius:50%; width:40px; height:40px; font-size:24px;">&times;</button>
     </div>
-
-    <h3 style="color:white; margin-bottom:20px; z-index:10000;">Scan QR Code</h3>
-
+    <h3 style="color:white; margin-bottom:20px;">Scan QR Code</h3>
     <div style="position: relative; width: 100%; max-width: 500px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; border: 2px solid white;">
         <video id="qr-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
-        
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5); pointer-events: none;"></div>
     </div>
-
-    <p id="qr-status" style="color: #ccc; margin-top: 20px; text-align: center; max-width: 90%;"></p>
-
-    <button id="switch-cam" style="display:none; margin-top:15px; padding:10px 20px; background:#333; color:white; border:1px solid #555; border-radius:20px;">
-        Switch Camera 🔄
-    </button>
+    <p id="qr-status" style="color: #ccc; margin-top: 20px; text-align: center;"></p>
 </div>
 
 <script>
-    // --- Логика формы (без изменений) ---
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
@@ -85,90 +62,48 @@
         }
     });
 
-    // === НОВАЯ ЛОГИКА СКАНЕРА (Nimiq QR Scanner) ===
     const scanBtn = document.getElementById("scan-qr-btn");
     const modal = document.getElementById("qr-modal");
     const closeBtn = document.getElementById("close-qr");
     const videoElem = document.getElementById("qr-video");
     const statusText = document.getElementById("qr-status");
-    const switchCamBtn = document.getElementById("switch-cam");
-
     let scanner = null;
 
-    // Указываем путь к Worker (ускорителю)
     QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
     scanBtn.addEventListener("click", () => {
         modal.style.display = "flex";
-        statusText.innerText = "Запуск камеры...";
+        statusText.innerText = "Starting camera...";
         startScanner();
     });
 
     closeBtn.addEventListener("click", stopScanner);
 
     async function startScanner() {
-        // Проверка HTTPS
         if (location.protocol !== "https:" && location.hostname !== "localhost") {
             statusText.style.color = "red";
-            statusText.innerText = "Ошибка: Камера требует HTTPS! (На GitHub Pages заработает)";
+            statusText.innerText = "Error: Camera needs HTTPS!";
             return;
         }
-
         try {
-            // Создаем сканер
             scanner = new QrScanner(videoElem, result => {
-                console.log('Decoded:', result);
-                handleResult(result);
-            }, {
-                onDecodeError: error => {
-                    // Ошибки распознавания игнорируем, это нормально
-                },
-                highlightScanRegion: true, // Подсветка зоны
-                highlightCodeOutline: true, // Обводка кода
-            });
-
+                const text = result.data || result; 
+                statusText.style.color = "#4caf50";
+                statusText.innerText = "Found! Redirecting...";
+                stopScanner();
+                if (text.includes("apostille=") && text.includes("date=")) window.location.href = text;
+                else alert("QR code scanned: " + text + "\nNot an apostille document.");
+            }, { highlightScanRegion: true, highlightCodeOutline: true });
             await scanner.start();
-            statusText.innerText = "Наведите камеру на QR-код";
-
-            // Проверка на наличие нескольких камер (для кнопки переключения)
-            const cameras = await QrScanner.listCameras(true);
-            if (cameras.length > 1) {
-                switchCamBtn.style.display = "block";
-                switchCamBtn.onclick = () => {
-                    // Простая логика переключения: берем следующую камеру
-                    // (для полноценной реализации нужно хранить ID, но это усложнит код)
-                    alert("Переключение камеры..."); 
-                };
-            }
-
+            statusText.innerText = "Point camera at QR code";
         } catch (e) {
-            console.error(e);
             statusText.style.color = "red";
-            statusText.innerText = "Ошибка доступа к камере: " + e;
-        }
-    }
-
-    function handleResult(result) {
-        // result может быть объектом или строкой в зависимости от версии
-        const text = result.data || result; 
-        
-        statusText.style.color = "#4caf50"; // Зеленый
-        statusText.innerText = "Успех! Переход...";
-        stopScanner();
-
-        if (text.includes("apostille=") && text.includes("date=")) {
-            window.location.href = text;
-        } else {
-            alert("QR-код считан: " + text + "\nНо это не документ апостиля.");
+            statusText.innerText = "Camera Error: " + e;
         }
     }
 
     function stopScanner() {
-        if (scanner) {
-            scanner.stop();
-            scanner.destroy();
-            scanner = null;
-        }
+        if (scanner) { scanner.stop(); scanner.destroy(); scanner = null; }
         modal.style.display = "none";
     }
 </script>
