@@ -126,7 +126,7 @@
             const qrId = "qr-" + item.id;
             
             // === УНИВЕРСАЛЬНАЯ ГЕНЕРАЦИЯ ССЫЛКИ ===
-            const qrUrl = new URL("index.html", window.location.href);
+            const qrUrl = new URL("result.html", window.location.href);
             qrUrl.searchParams.set("apostille", item.apostille_number);
             qrUrl.searchParams.set("date", item.issue_date);
             const verifyLink = qrUrl.toString();
