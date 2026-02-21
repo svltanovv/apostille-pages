@@ -193,7 +193,7 @@
         const { data: publicData } = db.storage.from("apostilles").getPublicUrl(row.file_path);
         
         // === УНИВЕРСАЛЬНАЯ ССЫЛКА (РАБОТАЕТ ВЕЗДЕ) ===
-        const qrUrl = new URL("index.html", window.location.href);
+        const qrUrl = new URL("result.html", window.location.href);
         qrUrl.searchParams.set("apostille", row.apostille_number);
         qrUrl.searchParams.set("date", row.issue_date);
         const qrLink = qrUrl.toString();
@@ -241,3 +241,4 @@
   </script>
 </body>
 </html>
+
