@@ -9,7 +9,7 @@
 </head>
 <body>
 <header class="header">
-  <div class="header-container"><div class="header-text"><h1>Legalization / Apostille Verification System</h1></div></div>
+  <div class="header-container"><div class="header-text"><h1>E-APOSTILLE GLOBAL</h1><p style="margin: 0; font-size: 11px; color: #666; font-weight: bold;">VERIFICATION SYSTEM</p></div></div>
 </header>
 
 <main class="content">
@@ -32,7 +32,8 @@
         <button type="button" id="scan-qr-btn" class="btn btn-secondary" style="flex: 1;">📷 Scan QR-code</button>
         <a href="samples.html" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">Samples</a>
     </div>
-    <a href="dashboard.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">Upload (Login)</a>
+    
+    <a href="index.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">← Back to Home</a>
   </form>
 </main>
 
@@ -49,6 +50,7 @@
 </div>
 
 <script>
+    // Поиск ведет на result.html
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
@@ -56,7 +58,7 @@
         const referral = document.getElementById("referral-input").value.trim();
         
         if(apostille && date) {
-            let url = `index.html?apostille=${encodeURIComponent(apostille)}&date=${encodeURIComponent(date)}`;
+            let url = `result.html?apostille=${encodeURIComponent(apostille)}&date=${encodeURIComponent(date)}`;
             if(referral) url += `&ref=${encodeURIComponent(referral)}`;
             window.location.href = url;
         }
@@ -91,8 +93,18 @@
                 statusText.style.color = "#4caf50";
                 statusText.innerText = "Found! Redirecting...";
                 stopScanner();
-                if (text.includes("apostille=") && text.includes("date=")) window.location.href = text;
-                else alert("QR code scanned: " + text + "\nNot an apostille document.");
+                
+                // Перенаправление со старого QR кода на новую страницу result.html
+                if (text.includes("apostille=") && text.includes("date=")) {
+                    let redirectUrl = text;
+                    if(redirectUrl.includes("index.html")) {
+                        redirectUrl = redirectUrl.replace("index.html", "result.html");
+                    }
+                    window.location.href = redirectUrl;
+                }
+                else {
+                    alert("QR code scanned: " + text + "\nNot an apostille document.");
+                }
             }, { highlightScanRegion: true, highlightCodeOutline: true });
             await scanner.start();
             statusText.innerText = "Point camera at QR code";
