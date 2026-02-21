@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>E-Apostille Global | Legalization & Verification System</title>
+  <meta name="description" content="Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention.">
+  <meta name="keywords" content="e-Apostille, Hague Convention, Legalization, Verification, Global Apostille, Document Authentication">
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <script>
+    // УМНЫЙ РЕДИРЕКТ ДЛЯ СТАРЫХ QR-КОДОВ
+    // Если кто-то сканирует старый QR, этот код мгновенно перекинет его на result.html
+    const p = new URLSearchParams(window.location.search);
+    if (p.has("apostille") && p.has("date")) {
+        window.location.href = "result.html?" + p.toString();
+    }
+  </script>
+</head>
+<body>
+<header class="header">
+  <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <div class="header-text">
+      <h1 style="color: #0b3d91; margin: 0; font-size: 22px;">E-APOSTILLE GLOBAL</h1>
+      <p style="margin: 0; font-size: 11px; color: #666; font-weight: bold; letter-spacing: 1px;">LEGALIZATION / VERIFICATION SYSTEM</p>
+    </div>
+    <select class="lang-selector" onchange="changeLang(this.value)" style="margin-top: 10px;">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="es">Español</option>
+      <option value="pt">Português</option>
+    </select>
+  </div>
+</header>
+
+<main class="content landing-container">
+    <h2 class="trn" data-trn-key="welcome" style="font-size: 18px; line-height: 1.6; color: #333; margin-bottom: 30px; font-weight: 500;">
+        Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention (e-Apostille).
+    </h2>
+
+    <a href="verify.html" class="start-btn trn" data-trn-key="start">START</a>
+
+    <div class="useful-links">
+        <h3 class="trn" data-trn-key="useful">USEFUL LINKS</h3>
+        <a href="info.html" class="trn" data-trn-key="about">ABOUT E-APOSTILLE GLOBAL</a>
+        <a href="https://www.hcch.net/en/instruments/conventions/specialised-sections/apostille" target="_blank" class="trn" data-trn-key="hague">The Hague Convention</a>
+        <a href="https://www.hcch.net" target="_blank" class="trn" data-trn-key="hcch">HCCH - Apostille</a>
+        <a href="info.html#contact" class="trn" data-trn-key="contact">CONTACT</a>
+    </div>
+</main>
+
+<script>
+// СЛОВАРЬ ПЕРЕВОДОВ
+const langs = {
+  en: {
+    welcome: "Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention (e-Apostille).",
+    start: "START",
+    useful: "USEFUL LINKS",
+    about: "ABOUT E-APOSTILLE GLOBAL",
+    hague: "The Hague Convention",
+    hcch: "HCCH - Apostille",
+    contact: "CONTACT"
+  },
+  fr: {
+    welcome: "Bienvenue sur l'application web pour la création et la validation d'un document e-apostillé conformément à la convention de La Haye (e-Apostille).",
+    start: "COMMENCER",
+    useful: "LIENS UTILES",
+    about: "À PROPOS D'E-APOSTILLE GLOBAL",
+    hague: "La Convention de La Haye",
+    hcch: "HCCH - Apostille",
+    contact: "CONTACT"
+  },
+  de: {
+    welcome: "Willkommen in der Webanwendung zur Erstellung und Validierung eines E-Apostille-Dokuments gemäß der Haager Konvention (E-Apostille).",
+    start: "STARTEN",
+    useful: "NÜTZLICHE LINKS",
+    about: "ÜBER E-APOSTILLE GLOBAL",
+    hague: "Das Haager Übereinkommen",
+    hcch: "HCCH - Apostille",
+    contact: "KONTAKT"
+  },
+  es: {
+    welcome: "Bienvenido a la aplicación web para la creación y validación de un documento con apostilla electrónica de acuerdo con el convenio de La Haya (e-Apostille).",
+    start: "INICIAR",
+    useful: "ENLACES ÚTILES",
+    about: "ACERCA DE E-APOSTILLE GLOBAL",
+    hague: "El Convenio de La Haya",
+    hcch: "HCCH - Apostilla",
+    contact: "CONTACTO"
+  },
+  pt: {
+    welcome: "Bem-vindo à aplicação web para a criação e validação de um documento com apostila eletrónica de acordo com a convenção da Haia (e-Apostille).",
+    start: "INICIAR",
+    useful: "LINKS ÚTEIS",
+    about: "SOBRE E-APOSTILLE GLOBAL",
+    hague: "A Convenção da Haia",
+    hcch: "HCCH - Apostila",
+    contact: "CONTATO"
+  }
+};
+
+function changeLang(lang) {
+  document.querySelectorAll('.trn').forEach(el => {
+    const key = el.getAttribute('data-trn-key');
+    if (langs[lang] && langs[lang][key]) {
+        el.textContent = langs[lang][key];
+    }
+  });
+}
+</script>
+</body>
+</html>
