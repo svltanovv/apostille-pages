@@ -47,7 +47,6 @@ const params = new URLSearchParams(window.location.search);
 const apostilleParam = params.get("apostille");
 const dateParam = params.get("date");
 
-// ИСПРАВЛЕНО: about.html -> verify.html
 if (!apostilleParam || !dateParam) window.location.href = "verify.html";
 else verifyDocument();
 
