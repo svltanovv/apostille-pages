@@ -6,13 +6,9 @@
   
   <title>E-Apostille Global | Legalization & Verification System</title>
   <meta name="description" content="Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention.">
-  <meta name="keywords" content="e-Apostille, Hague Convention, Legalization, Verification, Global Apostille, Document Authentication">
-  
   <link rel="stylesheet" href="style.css">
   
   <script>
-    // УМНЫЙ РЕДИРЕКТ ДЛЯ СТАРЫХ QR-КОДОВ
-    // Если кто-то сканирует старый QR, этот код мгновенно перекинет его на result.html
     const p = new URLSearchParams(window.location.search);
     if (p.has("apostille") && p.has("date")) {
         window.location.href = "result.html?" + p.toString();
@@ -56,57 +52,16 @@
 </main>
 
 <script>
-// СЛОВАРЬ ПЕРЕВОДОВ
 const langs = {
-  en: {
-    welcome: "Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention (e-Apostille).",
-    start: "START",
-    useful: "USEFUL LINKS",
-    about: "ABOUT E-APOSTILLE GLOBAL",
-    hague: "The Hague Convention",
-    hcch: "HCCH - Apostille",
-    contact: "CONTACT"
-  },
-  fr: {
-    welcome: "Bienvenue sur l'application web pour la création et la validation d'un document e-apostillé conformément à la convention de La Haye (e-Apostille).",
-    start: "COMMENCER",
-    useful: "LIENS UTILES",
-    about: "À PROPOS D'E-APOSTILLE GLOBAL",
-    hague: "La Convention de La Haye",
-    hcch: "HCCH - Apostille",
-    contact: "CONTACT"
-  },
-  de: {
-    welcome: "Willkommen in der Webanwendung zur Erstellung und Validierung eines E-Apostille-Dokuments gemäß der Haager Konvention (E-Apostille).",
-    start: "STARTEN",
-    useful: "NÜTZLICHE LINKS",
-    about: "ÜBER E-APOSTILLE GLOBAL",
-    hague: "Das Haager Übereinkommen",
-    hcch: "HCCH - Apostille",
-    contact: "KONTAKT"
-  },
-  es: {
-    welcome: "Bienvenido a la aplicación web para la creación y validación de un documento con apostilla electrónica de acuerdo con el convenio de La Haya (e-Apostille).",
-    start: "INICIAR",
-    useful: "ENLACES ÚTILES",
-    about: "ACERCA DE E-APOSTILLE GLOBAL",
-    hague: "El Convenio de La Haya",
-    hcch: "HCCH - Apostilla",
-    contact: "CONTACTO"
-  },
-  pt: {
-    welcome: "Bem-vindo à aplicação web para a criação e validação de um documento com apostila eletrónica de acordo com a convenção da Haia (e-Apostille).",
-    start: "INICIAR",
-    useful: "LINKS ÚTEIS",
-    about: "SOBRE E-APOSTILLE GLOBAL",
-    hague: "A Convenção da Haia",
-    hcch: "HCCH - Apostila",
-    contact: "CONTATO"
-  }
+  en: { welcome: "Welcome to the web application for the creation and validation of an e-apostillised document in accordance with the Hague convention (e-Apostille).", start: "START", useful: "USEFUL LINKS", about: "ABOUT E-APOSTILLE GLOBAL", hague: "The Hague Convention", hcch: "HCCH - Apostille", contact: "CONTACT" },
+  fr: { welcome: "Bienvenue sur l'application web pour la création et la validation d'un document e-apostillé conformément à la convention de La Haye (e-Apostille).", start: "COMMENCER", useful: "LIENS UTILES", about: "À PROPOS D'E-APOSTILLE GLOBAL", hague: "La Convention de La Haye", hcch: "HCCH - Apostille", contact: "CONTACT" },
+  de: { welcome: "Willkommen in der Webanwendung zur Erstellung und Validierung eines E-Apostille-Dokuments gemäß der Haager Konvention (E-Apostille).", start: "STARTEN", useful: "NÜTZLICHE LINKS", about: "ÜBER E-APOSTILLE GLOBAL", hague: "Das Haager Übereinkommen", hcch: "HCCH - Apostille", contact: "KONTAKT" },
+  es: { welcome: "Bienvenido a la aplicación web para la creación y validación de un documento con apostilla electrónica de acuerdo con el convenio de La Haya (e-Apostille).", start: "INICIAR", useful: "ENLACES ÚTILES", about: "ACERCA DE E-APOSTILLE GLOBAL", hague: "El Convenio de La Haya", hcch: "HCCH - Apostilla", contact: "CONTACTO" },
+  pt: { welcome: "Bem-vindo à aplicação web para a criação e validação de um documento com apostila eletrónica de acordo com a convenção da Haia (e-Apostille).", start: "INICIAR", useful: "LINKS ÚTEIS", about: "SOBRE E-APOSTILLE GLOBAL", hague: "A Convenção da Haia", hcch: "HCCH - Apostila", contact: "CONTATO" }
 };
 
 function changeLang(lang) {
-  localStorage.setItem('appLang', lang); // Сохраняем язык в память браузера
+  localStorage.setItem('appLang', lang);
   document.querySelectorAll('.trn').forEach(el => {
     const key = el.getAttribute('data-trn-key');
     if (langs[lang] && langs[lang][key]) {
@@ -115,14 +70,12 @@ function changeLang(lang) {
   });
 }
 
-// При загрузке страницы проверяем, сохранял ли пользователь язык ранее
 window.onload = () => {
   const savedLang = localStorage.getItem('appLang') || 'en';
   const selector = document.querySelector('.lang-selector');
   if(selector) selector.value = savedLang;
   changeLang(savedLang);
 };
-}
 </script>
 </body>
 </html>
