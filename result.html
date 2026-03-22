@@ -25,14 +25,14 @@
             <div style="margin-top: 20px; text-align: center;">
                 <a id="pdf_link" class="btn btn-main" href="#" target="_blank" style="display:none; width: 100%;">📄 Open Original PDF</a>
             </div>
-            <div style="margin-top: 15px; text-align: center;"><a href="about.html" class="back-btn">Check Another Document</a></div>
+            <div style="margin-top: 15px; text-align: center;"><a href="verify.html" class="back-btn">Check Another Document</a></div>
         </div>
 
         <div id="error-container" style="display: none; text-align: center;">
             <span style="font-size: 48px; color: #c62828;">✕</span>
             <h2 style="color: #c62828;">Verification Failed</h2>
             <p id="error-message">Document not found in our database.</p>
-            <a href="about.html" class="back-btn">Try Again</a>
+            <a href="verify.html" class="back-btn">Try Again</a>
         </div>
     </div>
 </main>
@@ -47,7 +47,8 @@ const params = new URLSearchParams(window.location.search);
 const apostilleParam = params.get("apostille");
 const dateParam = params.get("date");
 
-if (!apostilleParam || !dateParam) window.location.href = "about.html";
+// ИСПРАВЛЕНО: about.html -> verify.html
+if (!apostilleParam || !dateParam) window.location.href = "verify.html";
 else verifyDocument();
 
 async function verifyDocument() {
