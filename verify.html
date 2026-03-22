@@ -13,7 +13,7 @@
     <img src="hcch.jpg" alt="HCCH Logo" style="height: 50px; background: white; padding: 2px; border-radius: 4px;">
     <div class="header-text">
       <h1 style="color: #ffffff; margin: 0; font-size: 22px;">E-APOSTILLE GLOBAL</h1>
-      <p style="margin: 0; font-size: 11px; color: #ddd; font-weight: bold;">VERIFICATION SYSTEM</p>
+      <p class="trn" data-trn-key="sys_title" style="margin: 0; font-size: 11px; color: #ddd; font-weight: bold;">VERIFICATION SYSTEM</p>
     </div>
   </div>
 </header>
@@ -21,25 +21,27 @@
 <main class="content">
   <form class="verification-form" id="searchForm">
     <div style="text-align:center; margin-bottom:15px;">
-        <h2 style="font-size: 18px; color: #0b3d91;">Verify Document</h2>
-        <p style="font-size: 13px; color: #666;">Enter details to verify authenticity</p>
+        <h2 class="trn" data-trn-key="verify_doc" style="font-size: 18px; color: #0b3d91;">Verify Document</h2>
+        <p class="trn" data-trn-key="verify_sub" style="font-size: 13px; color: #666;">Enter details to verify authenticity</p>
     </div>
 
-    <label>Apostille Number</label>
+    <label class="trn" data-trn-key="ap_num">Apostille Number</label>
     <input type="text" id="apostille-input" placeholder="APO-XXXX-XXXX" required>
-    <label>Date of Issue</label>
+    
+    <label class="trn" data-trn-key="date_issue">Date of Issue</label>
     <input type="date" id="date-input" required>
-    <label>Referral Code (Optional)</label>
+    
+    <label class="trn" data-trn-key="ref_code">Referral Code (Optional)</label>
     <input type="text" id="referral-input" placeholder="Code">
 
-    <button type="submit" class="btn btn-main">Verify Document</button>
+    <button type="submit" class="btn btn-main trn" data-trn-key="verify_btn">Verify Document</button>
 
     <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button type="button" id="scan-qr-btn" class="btn btn-secondary" style="flex: 1;">📷 Scan QR-code</button>
-        <a href="samples.html" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">Samples</a>
+        <button type="button" id="scan-qr-btn" class="btn btn-secondary trn" data-trn-key="scan_qr" style="flex: 1;">📷 Scan QR-code</button>
+        <a href="samples.html" class="btn btn-secondary trn" data-trn-key="samples" style="flex: 1; text-align: center; text-decoration: none; padding-top: 10px;">Samples</a>
     </div>
     
-    <a href="index.html" class="btn btn-secondary" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">← Back to Home</a>
+    <a href="index.html" class="btn btn-secondary trn" data-trn-key="back_home" style="margin-top: 10px; text-align: center; width: 100%; text-decoration: none; padding-top: 10px;">← Back to Home</a>
   </form>
 </main>
 
@@ -56,7 +58,36 @@
 </div>
 
 <script>
-    // Поиск ведет на result.html
+    // === ЛОГИКА ПЕРЕВОДА ===
+    const verifyLangs = {
+      en: {
+        sys_title: "VERIFICATION SYSTEM", verify_doc: "Verify Document", verify_sub: "Enter details to verify authenticity", ap_num: "Apostille Number", date_issue: "Date of Issue", ref_code: "Referral Code (Optional)", verify_btn: "Verify Document", scan_qr: "📷 Scan QR-code", samples: "Samples", back_home: "← Back to Home"
+      },
+      fr: {
+        sys_title: "SYSTÈME DE VÉRIFICATION", verify_doc: "Vérifier le document", verify_sub: "Entrez les détails pour vérifier l'authenticité", ap_num: "Numéro d'apostille", date_issue: "Date de délivrance", ref_code: "Code de référence (Optionnel)", verify_btn: "Vérifier le document", scan_qr: "📷 Scanner le code QR", samples: "Exemples", back_home: "← Retour à l'accueil"
+      },
+      de: {
+        sys_title: "VERIFIZIERUNGSSYSTEM", verify_doc: "Dokument überprüfen", verify_sub: "Geben Sie Details zur Überprüfung ein", ap_num: "Apostillennummer", date_issue: "Ausstellungsdatum", ref_code: "Empfehlungscode (Optional)", verify_btn: "Dokument überprüfen", scan_qr: "📷 QR-Code scannen", samples: "Muster", back_home: "← Zurück zur Startseite"
+      },
+      es: {
+        sys_title: "SISTEMA DE VERIFICACIÓN", verify_doc: "Verificar documento", verify_sub: "Ingrese detalles para verificar autenticidad", ap_num: "Número de Apostilla", date_issue: "Fecha de emisión", ref_code: "Código de referencia (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Escanear código QR", samples: "Ejemplos", back_home: "← Volver al inicio"
+      },
+      pt: {
+        sys_title: "SISTEMA DE VERIFICAÇÃO", verify_doc: "Verificar documento", verify_sub: "Insira os detalhes para verificar a autenticidade", ap_num: "Número da Apostila", date_issue: "Data de emissão", ref_code: "Código de referência (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Digitalizar código QR", samples: "Amostras", back_home: "← Voltar ao início"
+      }
+    };
+
+    window.onload = () => {
+      const savedLang = localStorage.getItem('appLang') || 'en';
+      document.querySelectorAll('.trn').forEach(el => {
+        const key = el.getAttribute('data-trn-key');
+        if (verifyLangs[savedLang] && verifyLangs[savedLang][key]) {
+            el.textContent = verifyLangs[savedLang][key];
+        }
+      });
+    };
+
+    // === ЛОГИКА ФОРМЫ ===
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
@@ -100,15 +131,11 @@
                 statusText.innerText = "Found! Redirecting...";
                 stopScanner();
                 
-                // Перенаправление со старого QR кода на новую страницу result.html
                 if (text.includes("apostille=") && text.includes("date=")) {
                     let redirectUrl = text;
-                    if(redirectUrl.includes("index.html")) {
-                        redirectUrl = redirectUrl.replace("index.html", "result.html");
-                    }
+                    if(redirectUrl.includes("index.html")) redirectUrl = redirectUrl.replace("index.html", "result.html");
                     window.location.href = redirectUrl;
-                }
-                else {
+                } else {
                     alert("QR code scanned: " + text + "\nNot an apostille document.");
                 }
             }, { highlightScanRegion: true, highlightCodeOutline: true });
