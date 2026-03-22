@@ -58,23 +58,12 @@
 </div>
 
 <script>
-    // === ЛОГИКА ПЕРЕВОДА ===
     const verifyLangs = {
-      en: {
-        sys_title: "VERIFICATION SYSTEM", verify_doc: "Verify Document", verify_sub: "Enter details to verify authenticity", ap_num: "Apostille Number", date_issue: "Date of Issue", ref_code: "Referral Code (Optional)", verify_btn: "Verify Document", scan_qr: "📷 Scan QR-code", samples: "Samples", back_home: "← Back to Home"
-      },
-      fr: {
-        sys_title: "SYSTÈME DE VÉRIFICATION", verify_doc: "Vérifier le document", verify_sub: "Entrez les détails pour vérifier l'authenticité", ap_num: "Numéro d'apostille", date_issue: "Date de délivrance", ref_code: "Code de référence (Optionnel)", verify_btn: "Vérifier le document", scan_qr: "📷 Scanner le code QR", samples: "Exemples", back_home: "← Retour à l'accueil"
-      },
-      de: {
-        sys_title: "VERIFIZIERUNGSSYSTEM", verify_doc: "Dokument überprüfen", verify_sub: "Geben Sie Details zur Überprüfung ein", ap_num: "Apostillennummer", date_issue: "Ausstellungsdatum", ref_code: "Empfehlungscode (Optional)", verify_btn: "Dokument überprüfen", scan_qr: "📷 QR-Code scannen", samples: "Muster", back_home: "← Zurück zur Startseite"
-      },
-      es: {
-        sys_title: "SISTEMA DE VERIFICACIÓN", verify_doc: "Verificar documento", verify_sub: "Ingrese detalles para verificar autenticidad", ap_num: "Número de Apostilla", date_issue: "Fecha de emisión", ref_code: "Código de referencia (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Escanear código QR", samples: "Ejemplos", back_home: "← Volver al inicio"
-      },
-      pt: {
-        sys_title: "SISTEMA DE VERIFICAÇÃO", verify_doc: "Verificar documento", verify_sub: "Insira os detalhes para verificar a autenticidade", ap_num: "Número da Apostila", date_issue: "Data de emissão", ref_code: "Código de referência (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Digitalizar código QR", samples: "Amostras", back_home: "← Voltar ao início"
-      }
+      en: { sys_title: "VERIFICATION SYSTEM", verify_doc: "Verify Document", verify_sub: "Enter details to verify authenticity", ap_num: "Apostille Number", date_issue: "Date of Issue", ref_code: "Referral Code (Optional)", verify_btn: "Verify Document", scan_qr: "📷 Scan QR-code", samples: "Samples", back_home: "← Back to Home" },
+      fr: { sys_title: "SYSTÈME DE VÉRIFICATION", verify_doc: "Vérifier le document", verify_sub: "Entrez les détails pour vérifier l'authenticité", ap_num: "Numéro d'apostille", date_issue: "Date de délivrance", ref_code: "Code de référence (Optionnel)", verify_btn: "Vérifier le document", scan_qr: "📷 Scanner le code QR", samples: "Exemples", back_home: "← Retour à l'accueil" },
+      de: { sys_title: "VERIFIZIERUNGSSYSTEM", verify_doc: "Dokument überprüfen", verify_sub: "Geben Sie Details zur Überprüfung ein", ap_num: "Apostillennummer", date_issue: "Ausstellungsdatum", ref_code: "Empfehlungscode (Optional)", verify_btn: "Dokument überprüfen", scan_qr: "📷 QR-Code scannen", samples: "Muster", back_home: "← Zurück zur Startseite" },
+      es: { sys_title: "SISTEMA DE VERIFICACIÓN", verify_doc: "Verificar documento", verify_sub: "Ingrese detalles para verificar autenticidad", ap_num: "Número de Apostilla", date_issue: "Fecha de emisión", ref_code: "Código de referencia (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Escanear código QR", samples: "Ejemplos", back_home: "← Volver al inicio" },
+      pt: { sys_title: "SISTEMA DE VERIFICAÇÃO", verify_doc: "Verificar documento", verify_sub: "Insira os detalhes para verificar a autenticidade", ap_num: "Número da Apostila", date_issue: "Data de emissão", ref_code: "Código de referência (Opcional)", verify_btn: "Verificar documento", scan_qr: "📷 Digitalizar código QR", samples: "Amostras", back_home: "← Voltar ao início" }
     };
 
     window.onload = () => {
@@ -87,7 +76,6 @@
       });
     };
 
-    // === ЛОГИКА ФОРМЫ ===
     document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const apostille = document.getElementById("apostille-input").value.trim();
