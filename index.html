@@ -106,12 +106,22 @@ const langs = {
 };
 
 function changeLang(lang) {
+  localStorage.setItem('appLang', lang); // Сохраняем язык в память браузера
   document.querySelectorAll('.trn').forEach(el => {
     const key = el.getAttribute('data-trn-key');
     if (langs[lang] && langs[lang][key]) {
         el.textContent = langs[lang][key];
     }
   });
+}
+
+// При загрузке страницы проверяем, сохранял ли пользователь язык ранее
+window.onload = () => {
+  const savedLang = localStorage.getItem('appLang') || 'en';
+  const selector = document.querySelector('.lang-selector');
+  if(selector) selector.value = savedLang;
+  changeLang(savedLang);
+};
 }
 </script>
 </body>
